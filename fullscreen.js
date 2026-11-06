@@ -6,6 +6,35 @@ const restArtwork=document.createElement('div');restArtwork.id='rest-artwork';re
 function showRest(k){restArtwork.innerHTML=window.SAOKO_ART.rest(k,slots);restArtwork.hidden=false;}
 
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+async function revealLoadedStand(){
+ const portrait=()=>matchMedia('(max-width:760px) and (orientation:portrait)').matches;
+ const destination=portrait()?$('.mobile-lockup'):$('.desktop-lockup');
+ const sourceParts=[$('.loading-er'),$('.loading-cross'),$('.loading-saoko')];
+ const targetParts=[destination.querySelector('a:first-child img'),destination.querySelector(':scope > span'),destination.querySelector('a:last-child img')];
+ await Promise.all([...sourceParts.filter(el=>el.tagName==='IMG'),...targetParts.filter(el=>el.tagName==='IMG')].map(im=>im.decode()));
+ await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ const from=sourceParts.map(el=>el.getBoundingClientRect()),to=targetParts.map(el=>el.getBoundingClientRect());
+ document.body.classList.replace('assets-loading','assets-revealing');
+ loading.classList.add('docking');
+ const duration=reduced?0:1050;
+ const animations=sourceParts.map((el,i)=>el.animate([
+  {transform:'translate(0px,0px) scale(1)'},
+  {transform:`translate(${to[i].left-from[i].left}px,${to[i].top-from[i].top}px) scale(${to[i].width/from[i].width},${to[i].height/from[i].height})`}
+ ],{duration,easing:'cubic-bezier(.22,.8,.2,1)',fill:'forwards'}));
+ const glyph=$('.loading-cross-glyph'),rotation=getComputedStyle(glyph).transform;
+ const matrix=rotation==='none'?[1,0]:rotation.slice(7,-1).split(',').map(Number);
+ const angle=(Math.atan2(matrix[1],matrix[0])*180/Math.PI+360)%360;
+ glyph.style.animation='none';
+ animations.push(glyph.animate([{transform:`rotate(${angle}deg)`},{transform:'rotate(360deg)'}],{duration,easing:'cubic-bezier(.2,.7,.2,1)',fill:'forwards'}));
+ // A resize during arrival finishes directly at the responsive destination.
+ const finish=()=>animations.forEach(animation=>animation.finish());
+ window.addEventListener('resize',finish,{once:true});
+ await Promise.all(animations.map(animation=>animation.finished));
+ window.removeEventListener('resize',finish);
+ document.body.classList.remove('assets-revealing');document.body.classList.add('assets-ready');
+ loading.classList.add('ready');loading.hidden=true;
+ animations.forEach(animation=>animation.cancel());
+}
 const W=1920,H=1080;
 const titles=['Cream & yellow','Pink & blue','Cream & green','Red & cream','Blue & pop'];
 const logoColors=['#141412','#1b8dec','#00744e','#df1017','#141412'];
@@ -111,7 +140,7 @@ void main(){
  ink=mix(ink,metal,rim);
  gl_FragColor=vec4(ink,mix(sampleInk.a,1.,rim));
 }`;
-function showError(){restArtwork.hidden=true;loading.classList.add('ready');$('#error').hidden=false;$('#error').textContent='The reels could not start. Keep scrolling to explore the five designs below.';unlockJourney();}
+function showError(){restArtwork.hidden=true;loading.classList.add('ready');loading.hidden=true;document.body.classList.remove('assets-loading','assets-revealing');document.body.classList.add('assets-ready','slot-failed');$('#error').hidden=false;$('#error').textContent='The reels could not start. Keep scrolling to explore the five designs below.';unlockJourney();}
 function compile(type,code){const s=gl.createShader(type);gl.shaderSource(s,code);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;}
 let program,uniforms;
 function initGL(){
@@ -215,6 +244,14 @@ document.querySelector('#experience').addEventListener('pointerup',e=>{if(!journ
 document.querySelector('#experience').addEventListener('pointercancel',()=>{touchStart=null;});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();cancelAnimationFrame(raf);busy=false;showError();});
 try{
- await window.SAOKO_ART.ready;document.documentElement.style.setProperty('--saoko-wall',`url("${window.SAOKO_ART.material('wall')}")`);document.documentElement.style.setProperty('--saoko-floor',`url("${window.SAOKO_ART.material('floor')}")`);alignEnvironment();document.querySelector('.architecture').src=window.SAOKO_ART.architecture();initGL();await Promise.all(slots.map(buildAtlas));await image('stand-wide.webp');ready=true;draw();showRest(1);updateState();loading.classList.add('ready');$('#status').textContent='Design 1 : Cream & yellow';
+ await window.SAOKO_ART.ready;
+ const wall=window.SAOKO_ART.material('wall'),floor=window.SAOKO_ART.material('floor');
+ document.documentElement.style.setProperty('--saoko-wall',`url("${wall}")`);document.documentElement.style.setProperty('--saoko-floor',`url("${floor}")`);alignEnvironment();
+ const architecture=$('.architecture');architecture.src=window.SAOKO_ART.architecture();
+ initGL();await Promise.all([...slots.map(buildAtlas),architecture.decode(),image(wall),image(floor)]);
+ draw();showRest(1);
+ await Promise.all([...restArtwork.querySelectorAll('image')].map(el=>image(el.getAttribute('href'))));
+ await revealLoadedStand();
+ ready=true;updateState();$('#status').textContent='Design 1 : Cream & yellow';
  if(!followSectionLink())window.scrollTo({top:0,behavior:'instant'});
 }catch(e){console.error(e);showError();}
