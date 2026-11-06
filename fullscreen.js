@@ -73,12 +73,12 @@ function alignEnvironment(){
  environment.style.top=top+'px';environment.style.height=(portrait?r.height:host.height)+'px';
  environment.style.setProperty('--floor-line',(r.top-host.top-top+r.height*1032/1080)+'px');
  environment.style.setProperty('--counter-left',(r.left-host.left+r.width*295/1920)+'px');environment.style.setProperty('--counter-width',(r.width*1340/1920)+'px');
- const hintLeft=Math.max(20,Math.min(56,host.width*.027));
- const hintWidth=r.left-host.left+r.width*295/1920-hintLeft-28;
- slotHint.classList.toggle('hint-compact',!portrait&&hintWidth<125);
- slotHint.style.setProperty('--hint-left',hintLeft+'px');
- slotHint.style.setProperty('--hint-width',Math.max(125,Math.min(280,hintWidth))+'px');
- slotHint.style.setProperty('--hint-top',(r.top-host.top+r.height*222/1080)+'px');
+ const counterLeft=r.left-host.left+r.width*295/1920;
+ const doorLeft=r.left-host.left+r.width*310/1920;
+ const diameter=portrait?r.width*336/1920:Math.max(64,Math.min(180,counterLeft*.44));
+ slotHint.style.setProperty('--arcade-size',diameter+'px');
+ slotHint.style.setProperty('--arcade-left',(portrait?doorLeft:counterLeft/2)+'px');
+ slotHint.style.setProperty('--arcade-top',(portrait?r.bottom-host.top+77:r.top-host.top+r.height*.60-diameter/2)+'px');
 }
 new ResizeObserver(alignEnvironment).observe(document.querySelector('#experience'));
 window.addEventListener('resize',alignEnvironment);
@@ -209,6 +209,10 @@ function updateState(){
 function updateHint(){
  slotHint.disabled=!journeyUnlocked&&(!ready||busy);
  slotHint.setAttribute('aria-busy',String(busy));
+ slotHint.querySelector('.arcade-word').textContent=journeyUnlocked?'GO':'SPIN';
+ slotHint.querySelector('.copy-desktop').textContent=journeyUnlocked?'EXPLORE & VOTE':'SCROLL TO SPIN';
+ slotHint.querySelector('.copy-mobile').innerHTML=journeyUnlocked?'EXPLORE<br>& VOTE <span class="swipe-arrow" aria-hidden="true">↑</span>':'SWIPE UP<br>TO SPIN <span class="swipe-arrow" aria-hidden="true">↑</span>';
+ slotHint.querySelector('.control-copy small').textContent=journeyUnlocked?'FIND YOUR FAVOURITE':'SAOKO SLOT · 5 DESIGNS';
  slotHint.setAttribute('aria-label',journeyUnlocked?'Explore the five SAOKO designs and vote':'Spin the SAOKO slot to discover the next design');
 }
 let hintStart=null,hintSwiped=false;

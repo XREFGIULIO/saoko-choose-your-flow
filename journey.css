@@ -38,8 +38,8 @@ html{overflow-x:clip;overflow-y:auto}body:not(.intro-locked){overflow:visible}ht
 .stage-floor{position:absolute;top:var(--floor-line);bottom:0;left:0;right:0;background:#8c8376 var(--saoko-floor) center top/cover no-repeat;box-shadow:inset 0 1px 1px #221c1940}
 #scene{z-index:1;background:transparent}.architecture{background:transparent}#slot-glass{position:absolute;inset:0;z-index:4;pointer-events:none}#slot-glass>svg{display:block;width:100%;height:100%}
 @media(max-width:760px) and (orientation:portrait){#experience{background:var(--paper)}#scene{background:transparent}.mobile-intro{z-index:2}}
-@font-face{font-family:ER Circular;src:url('assets/er-circular-book.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:ER Circular;src:url('assets/er-circular-bold.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:ER Circular;src:url('er-circular-book.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:ER Circular;src:url('er-circular-bold.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}
 .studio-signature{padding-block:52px;gap:50px}.studio-invitation{font-family:'ER Circular',Arial,sans-serif;text-align:left;max-width:520px;line-height:1.35}.studio-invitation>p{font-size:clamp(27px,2.4vw,38px);letter-spacing:-.035em;margin-bottom:12px}.studio-invitation>span{font-size:clamp(16px,1.25vw,20px);color:#d7d5c8}.studio-invitation>a{font-family:inherit;font-size:17px;font-weight:700;margin-top:25px;padding:16px 20px 16px 24px;min-height:58px;gap:40px;border:1px solid #f4f0df;background:#f4f0df;color:#161715;border-radius:3px;transition:background .2s,transform .2s,box-shadow .2s}.studio-invitation>a>span{font-size:25px;line-height:1;transition:transform .2s}.studio-invitation>a:hover{background:var(--yellow);border-color:var(--yellow);color:#141412;transform:translateY(-2px);box-shadow:0 8px 24px #0004}.studio-invitation>a:hover>span{transform:translate(3px,-3px)}.studio-identity>p{font-family:'ER Circular',Arial,sans-serif;font-size:11px}.studio-logo{width:205px}
 @media(max-width:760px){.studio-signature{padding-block:36px;gap:36px}.studio-invitation{width:100%}.studio-invitation>a{display:flex;justify-content:space-between;width:100%;font-size:16px}.studio-invitation>p{font-size:29px}.studio-logo{width:180px}}
 
@@ -81,41 +81,63 @@ html{overflow-x:clip;overflow-y:auto}body:not(.intro-locked){overflow:visible}ht
 @media(max-width:760px) and (orientation:portrait){.desktop-lockup{display:none}.loading-caption{top:calc(50% + 65px)}}
 @media(prefers-reduced-motion:reduce){.loading-cross-glyph{animation:none}#loading::before{transition:none}}
 
-/* A clear invitation to operate the stand, placed on the empty wall. */
-.slot-hint{position:absolute;z-index:7;left:var(--hint-left,32px);top:var(--hint-top,20%);width:var(--hint-width,220px);display:flex;flex-direction:column;align-items:center;gap:17px;padding:clamp(18px,2vw,28px) 14px;border:1.5px solid var(--ink);border-radius:8px;background:var(--yellow);color:var(--ink);box-shadow:0 5px 0 #141412,0 13px 25px #211a1026;text-align:center;font-family:'ER Circular',Arial,sans-serif;cursor:pointer;transition:background .2s,box-shadow .2s}
-.slot-hint:hover:not(:disabled){background:#ffe640;box-shadow:0 5px 0 #141412,0 16px 32px #211a1040}
-.slot-hint:active:not(:disabled){box-shadow:0 2px 0 #141412,0 7px 15px #211a1026}
+/* Approved Arcade control: a physical yellow disc in the left wall. */
+.slot-hint.arcade-control{position:absolute;z-index:7;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;font-family:'ER Circular',Arial,sans-serif;line-height:1;color:#141412;padding:0;background:none;border:0;border-radius:0;box-shadow:none;cursor:pointer}
 .slot-hint:disabled{opacity:1;cursor:default}
-.hint-next,.hint-explore{display:flex;flex-direction:column;align-items:center;width:100%}
-.hint-kicker{font-size:clamp(9px,.7vw,12px);line-height:1.2;letter-spacing:.13em;font-weight:700;margin-bottom:13px}
-.hint-title{font-size:clamp(20px,calc(var(--hint-width,220px)*.145),40px);font-weight:700;line-height:.98;letter-spacing:-.045em}
-.hint-detail{margin-top:15px;font-size:clamp(9px,.65vw,11px);line-height:1.45;font-weight:700;letter-spacing:.055em;max-width:210px}
-.hint-icon{display:grid;place-items:center;flex:none;width:52px;height:52px;border-radius:50%;background:var(--ink);color:var(--yellow)}
-.hint-icon svg{grid-area:1/1;width:27px;height:36px}
-.hint-wheel{animation:slot-wheel-cue 1.65s ease-in-out infinite}
-.hint-swipe{animation:slot-swipe-cue 1.65s ease-in-out infinite}
-.hint-mobile,.hint-explore,.hint-icon .hint-swipe{display:none}
-body:not(.intro-locked) .hint-next{display:none}body:not(.intro-locked) .hint-explore{display:flex}
-.slot-hint[aria-busy=true] .hint-icon{animation:slot-cue-pulse 1s ease-in-out infinite}
-.slot-hint.hint-compact{left:50%;top:auto;bottom:18px;transform:translateX(-50%);width:330px;max-width:calc(100% - 40px);flex-direction:row;gap:15px;padding:14px 18px;text-align:left}
-.hint-compact .hint-next,.hint-compact .hint-explore{align-items:flex-start}.hint-compact .hint-title{font-size:20px}.hint-compact .hint-title br{display:none}.hint-compact .hint-kicker{font-size:9px;margin-bottom:5px}.hint-compact .hint-detail{font-size:9px;margin-top:6px}.hint-compact .hint-icon{width:44px;height:44px}
-@keyframes slot-wheel-cue{0%,100%{transform:translateY(0);opacity:1}65%{transform:translateY(5px);opacity:.3}}
-@keyframes slot-swipe-cue{0%,100%{transform:translateY(3px)}60%{transform:translateY(-4px)}}
-@keyframes slot-cue-pulse{50%{opacity:.55}}
-@media(hover:none) and (pointer:coarse){.hint-desktop,.hint-icon .hint-mouse{display:none}.hint-mobile{display:block}.hint-icon .hint-swipe{display:block}}
+.control-art{display:inline-flex;align-items:center;justify-content:center;flex:none}
+.control-copy{display:flex;flex-direction:column;gap:7px;white-space:nowrap}
+.control-copy strong{font-weight:700;line-height:1.2}.control-copy small{line-height:1.2;opacity:.78}
+.copy-mobile{display:none}
+.arcade-base{display:grid;place-items:center;border-radius:50%}
+.arcade-cap{position:relative;display:grid;place-items:center;border-radius:50%;font-weight:700;line-height:1}
+.arcade-spark{position:absolute;line-height:1}
 @media(max-width:760px) and (orientation:portrait){
  #experience{min-height:max(690px,calc(75vw + 390px))}
- .slot-hint{left:50%;top:calc(75vw + 49px);bottom:auto;transform:translateX(-50%);width:calc(100% - 48px);max-width:340px;padding:20px 24px;gap:12px;border-radius:9px}
- .hint-icon{width:38px;height:38px}.hint-icon svg{width:24px;height:30px}
- .hint-kicker{font-size:9px;margin-bottom:8px}.hint-title{font-size:29px;line-height:.96}.hint-detail{font-size:9px;margin-top:10px;max-width:none}
- .hint-desktop,.hint-icon .hint-mouse{display:none}.hint-mobile{display:block}.hint-icon .hint-swipe{display:block}
- .mobile-intro{top:auto;bottom:28px;gap:22px;justify-content:flex-end}
- .mobile-kicker,.swipe-cue{display:none}.mobile-manifesto{order:1;margin:0;font-size:clamp(20px,5.7vw,24px);line-height:1.1}
- .mobile-lockup{order:2;margin:0}
+ .copy-desktop{display:none}.copy-mobile{display:block}
+ .mobile-intro{justify-content:flex-end}.mobile-kicker,.swipe-cue{display:none}
+ .mobile-manifesto{order:1;margin:0;line-height:1.1}.mobile-lockup{order:2;margin:0}
 }
-@media(prefers-reduced-motion:reduce){.hint-wheel,.hint-swipe,.slot-hint[aria-busy=true] .hint-icon{animation:none}}
-@media(max-width:760px) and (max-height:740px) and (orientation:portrait){
+
+
+.slot-hint.arcade-control{
+ left:var(--arcade-left);top:var(--arcade-top);bottom:auto;transform:translateX(-50%);
+ width:max(190px,calc(var(--arcade-size) + 32px));max-width:none;
+ flex-direction:column;align-items:center;text-align:center;gap:24px;min-height:0;
+}
+.arcade-base{
+ width:var(--arcade-size);height:var(--arcade-size);padding:calc(var(--arcade-size)*.065);
+ background:linear-gradient(145deg,#3f4036,#141412 35%,#090a08 75%,#454436);
+ box-shadow:0 calc(var(--arcade-size)*.055) 0 #0c0d0a,0 calc(var(--arcade-size)*.095) calc(var(--arcade-size)*.13) #211a1029;
+ border:1px solid #555649;
+}
+.arcade-cap{
+ width:100%;height:100%;padding-top:calc(var(--arcade-size)*.12);
+ background:linear-gradient(145deg,#ffe341 8%,#f9d317 55%,#e9c30d 90%);
+ box-shadow:inset 0 calc(var(--arcade-size)*.025) 0 #fff49c,inset 0 calc(var(--arcade-size)*-.045) 0 #b89d09;
+ outline:calc(var(--arcade-size)*.012) solid #141412;outline-offset:calc(var(--arcade-size)*-.075);
+ font-size:calc(var(--arcade-size)*.23);letter-spacing:.025em;transition:transform .14s;
+}
+.arcade-spark{top:calc(var(--arcade-size)*.125);font-size:calc(var(--arcade-size)*.14)}
+.control-copy strong{font-size:15px;letter-spacing:.065em}.control-copy small{font-size:10px;letter-spacing:.07em}
+.slot-hint.arcade-control:active:not(:disabled) .arcade-cap{transform:translateY(3px)}
+.slot-hint.arcade-control:focus-visible{outline:2px solid #141412;outline-offset:12px;border-radius:12px}
+.slot-hint.arcade-control[aria-busy="true"] .arcade-spark{animation:arcade-spin 1s linear infinite}
+@keyframes arcade-spin{to{transform:rotate(360deg)}}
+@media(max-width:760px) and (orientation:portrait){
+ .slot-hint.arcade-control{
+  transform:none;left:var(--arcade-left);top:var(--arcade-top);width:calc(100% - var(--arcade-left) - 24px);
+  flex-direction:row;align-items:center;justify-content:flex-start;text-align:left;gap:28px;
+ }
+ .control-copy{gap:10px;flex:1;white-space:normal}
+ .control-copy strong{font-size:clamp(17px,4.7vw,22px);line-height:1.08;letter-spacing:.015em;position:relative;padding-right:22px}
+ .control-copy small{font-size:8px;letter-spacing:.055em;white-space:nowrap}
+ .swipe-arrow{position:absolute;right:0;top:4px;font-size:32px;line-height:1;font-weight:400}
+ .mobile-intro{top:auto;bottom:clamp(68px,13svh,110px);gap:22px}
+ .mobile-manifesto{font-size:clamp(20px,5.7vw,24px)}
+}
+@media(max-width:760px) and (orientation:portrait) and (max-height:740px){
  #experience{min-height:max(100svh,calc(75vw + 350px))}
- .slot-hint{padding:14px 20px;gap:8px}.hint-icon{width:34px;height:34px}.hint-title{font-size:26px}
- .mobile-intro{bottom:20px;gap:16px}.mobile-manifesto{font-size:20px}
+ .slot-hint.arcade-control{top:calc(75vw + 65px);gap:24px}
+ .mobile-intro{bottom:40px;gap:18px}
 }
+@media(prefers-reduced-motion:reduce){.slot-hint.arcade-control[aria-busy="true"] .arcade-spark{animation:none}}
