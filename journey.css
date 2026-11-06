@@ -46,3 +46,7 @@ html{overflow-x:clip;overflow-y:auto}body:not(.intro-locked){overflow:visible}ht
 .stage-floor:after{content:'';position:absolute;top:-3px;left:var(--counter-left);width:var(--counter-width);height:clamp(20px,4vw,66px);background:linear-gradient(to bottom,#ffcc7d96,#ffcb7735 35%,#ffd39708 80%,transparent);filter:blur(5px);pointer-events:none}
 
 .stage-wall:after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 19%,#ffda9425,transparent 58%);pointer-events:none}.stage-floor:before{content:'';position:absolute;inset:0;background:#ffc8790d;pointer-events:none}
+
+/* Shared results: actual vote totals are as prominent as percentages. */
+.result-row{grid-template-columns:200px minmax(0,1fr) 145px}.result-value{display:flex;flex-direction:column;align-items:flex-end;gap:3px}.result-count{font-size:24px;line-height:1.2;white-space:nowrap}.result-count>span{font-size:14px;font-weight:400}.result-percentage{font-size:16px;font-weight:700;line-height:1.3}
+@media(max-width:760px){.result-row{grid-template-columns:105px minmax(0,1fr) 100px;gap:9px}.result-count{font-size:19px}.result-count>span{font-size:12px}.result-percentage{font-size:14px}}

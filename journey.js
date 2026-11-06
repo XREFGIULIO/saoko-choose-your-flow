@@ -23,7 +23,7 @@ if(!reducedMotion&&'IntersectionObserver'in window){
 }
 const scrollToVote=()=>q('#ton-vote').scrollIntoView({behavior:reducedMotion?'instant':'smooth',block:'start'});
 let selected=null,confirmed=null,pendingChoice=null,saving=false,checking=true;
-const votes=window.SAOKO_VOTES,STORAGE_KEY=votes.KEY;
+const votes=window.SAOKO_VOTES;
 const dialog=q('#confirm-dialog');
 function updateSelection(){
  selected=Number(q('input[name="design"]:checked')?.value)||null;
@@ -41,7 +41,7 @@ function revealResults(data,focus=false){
  q('#vote-fieldset').disabled=true;q('#review-vote').disabled=true;q('#review-vote').textContent='Vote saved ✓';updateSelection();
  q('#receipt-text').textContent=`You chose ${shortNumber(selected)} · ${designs[selected-1].name}. Got it.`;
  const {counts,total}=data;
- q('#results-bars').innerHTML=designs.map((d,i)=>{const percent=Math.round(counts[i]/Math.max(total,1)*100);return `<div class="result-row"><div class="result-name">${shortNumber(d.id)} · ${d.name}${d.id===selected?'<small>Your flow ✓</small>':''}</div><div class="result-track"><div class="result-fill" style="--percent:${percent}%;--bar:${d.colors[d.id===1?1:0]}"></div></div><div class="result-value">${percent}%<small>${counts[i]} vote${counts[i]===1?'':'s'}</small></div></div>`;}).join('');
+ q('#results-bars').innerHTML=designs.map((d,i)=>{const percent=Math.round(counts[i]/Math.max(total,1)*100),count=counts[i].toLocaleString('en-GB');return `<div class="result-row"><div class="result-name">${shortNumber(d.id)} · ${d.name}${d.id===selected?'<small>Your flow ✓</small>':''}</div><div class="result-track"><div class="result-fill" style="--percent:${percent}%;--bar:${d.colors[d.id===1||d.id===3?1:0]}"></div></div><div class="result-value"><strong class="result-count">${count} <span>vote${counts[i]===1?'':'s'}</span></strong><span class="result-percentage">${percent}%</span></div></div>`;}).join('');
  q('#results-total').textContent=total+' vote'+(total===1?'':'s')+' from the SAOKO community · Updated '+new Date(data.updatedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'.';
  q('#vote-results').hidden=false;
  if(focus){q('#vote-results').focus({preventScroll:true});q('#vote-results').scrollIntoView({behavior:reducedMotion?'instant':'smooth',block:'start'});}
@@ -62,7 +62,7 @@ q('#confirm-vote').addEventListener('click',async()=>{
 
  finally{saving=false;q('#confirm-vote').disabled=false;q('#edit-vote').disabled=false;}
 });
-// A returning visitor keeps the same confirmed choice; only server totals are shown.
+// Results belong to this opening only; all counts come from the shared server.
 async function refreshResults(){
  try{
   const data=await votes.status();
@@ -74,7 +74,6 @@ async function refreshResults(){
 await refreshResults();
 setInterval(()=>{if(confirmed&&!document.hidden)refreshResults();},30000);
 window.addEventListener('focus',()=>{if(confirmed)refreshResults();});
-window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY)refreshResults();});
 q('#share-invitation').addEventListener('click',async()=>{
  const publicURL=location.protocol==='https:'&&!['localhost','127.0.0.1'].includes(location.hostname)?`\n${location.origin+location.pathname}`:'';
  const text=`Your turn. Your flow. Help choose SAOKO’s next look in Geneva! Five designs, one vote. The design with the most votes in the public poll is the one we’ll bring to life. Find your favourite and pass the flow on.${publicURL}`;

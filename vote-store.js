@@ -1,13 +1,10 @@
-/* Shared poll: browser storage holds only an anonymous receipt key, never totals. */
+/* Shared poll: one anonymous ballot per page opening; totals stay on the server. */
 (() => {
- const KEY='saoko.geneve.public-poll.v1', API=window.SAOKO_POLL_API || (location.hostname==='127.0.0.1'||location.hostname==='localhost'?'http://127.0.0.1:5184/api/poll':'https://saoko-geneve-your-flow.downysunflower1.chatgpt.site/api/poll');
- let creating;
- function token(){
-  const local=localStorage.getItem(KEY), cookie=document.cookie.split('; ').find(s=>s.startsWith('saoko_poll='))?.split('=')[1];
-  const value=local||cookie;
-  return /^[a-f0-9]{64}$/.test(value||'')?value:null;
- }
- async function request(action,body={},key=token()){
+ const API=window.SAOKO_POLL_API || (location.hostname==='127.0.0.1'||location.hostname==='localhost'?'http://127.0.0.1:5184/api/poll':'https://saoko-geneve-your-flow.downysunflower1.chatgpt.site/api/poll');
+ // Keep the receipt key only in this document. Reloads and new tabs get a fresh ballot.
+ // Retain it after a failed request so a retry cannot count the same ballot twice.
+ let currentToken=null,creating;
+ async function request(action,body={},key=currentToken){
   const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),20000);
   try{
    const response=await fetch(API+'/'+action,{method:'POST',headers:{'Content-Type':'application/json',...(key?{Authorization:'Bearer '+key}:{})},body:JSON.stringify(body),cache:'no-store',signal:controller.signal});
@@ -20,22 +17,18 @@
   }finally{clearTimeout(timer);}
  }
  async function session(){
-  if(token())return token();
-  localStorage.setItem(KEY+'.check','ok');localStorage.removeItem(KEY+'.check');
-  const create=async()=>{
-   if(token())return token();
-   const data=await request('session',{},null);
-   localStorage.setItem(KEY,data.token);
-   document.cookie='saoko_poll='+data.token+'; Max-Age=31536000; Path=/; SameSite=Lax'+(location.protocol==='https:'?'; Secure':'');
-   return data.token;
-  };
-  return navigator.locks?navigator.locks.request(KEY,create):create();
+  if(currentToken)return currentToken;
+  const data=await request('session',{},null);
+  currentToken=data.token;
+  return currentToken;
  }
  async function vote(design){
   creating ||= session().finally(()=>{creating=null;});
   const key=await creating;
   return request('vote',{design},key);
  }
- const status=async()=>token()?request('status'):{receipt:null};
- window.SAOKO_VOTES={KEY,status,vote};
+ const status=async()=>currentToken?request('status'):{receipt:null};
+ window.SAOKO_VOTES={status,vote};
+ // A history-restored page is another opening, too; avoid restoring its old ballot.
+ window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
 })();
