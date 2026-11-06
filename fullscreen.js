@@ -17,7 +17,11 @@ const slots=[
  {name:'front',x:656,y:556,w:964,h:434,aw:2892,ah:1302},
  {name:'menu',x:666,y:222,w:200,h:334,aw:800,ah:1336},
  ...[890,1006,1122,1238,1354,1470].map((x,i)=>({name:'card',card:i+1,x,y:250,w:100,h:132,aw:750,ah:990}))
-].map((r,i)=>({...r,phase:0,velocity:0,texture:null,delay:i<4?[140,60,180,100][i]:((i-4)%3)*65,duration:i<4?[6100,5350,5850,5550][i]:4400+(i-4)*235}));
+].map((r,i)=>{
+ const delay=i<4?[140,60,180,100][i]:((i-4)%3)*65;
+ const settle=i<4?[4000,3420,3760,3600][i]:3100+(i-4)*130;
+ return {...r,phase:0,velocity:0,texture:null,delay,duration:settle-delay};
+});
 // Curved glazing is a fixed, sharp optical layer, independent of moving artwork.
 function mountGlazing(){
  glass.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 1920 1080"><defs>
@@ -197,7 +201,7 @@ window.addEventListener('keydown',e=>{
  if(['ArrowDown','ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();advance(1);}
  if(['ArrowUp','ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();advance(-1);}
 });
-document.querySelector('#experience').addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;touchStart=e.clientY;document.querySelector('#experience').setPointerCapture(e.pointerId);});
+document.querySelector('#experience').addEventListener('pointerdown',e=>{if(e.target.closest('a,button,input,select,textarea')){touchStart=null;return;}if(e.pointerType==='mouse'&&e.button!==0)return;touchStart=e.clientY;document.querySelector('#experience').setPointerCapture(e.pointerId);});
 document.querySelector('#experience').addEventListener('pointerup',e=>{if(!journeyUnlocked&&touchStart!==null&&Math.abs(touchStart-e.clientY)>35)advance(Math.sign(touchStart-e.clientY));touchStart=null;});
 document.querySelector('#experience').addEventListener('pointercancel',()=>{touchStart=null;});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();cancelAnimationFrame(raf);busy=false;showError();});
