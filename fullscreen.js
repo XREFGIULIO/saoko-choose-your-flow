@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s);
-const scene=$('#scene'),canvas=$('#reels'),loading=$('#loading');
+const scene=$('#scene'),canvas=$('#reels'),loading=$('#loading'),slotHint=$('.slot-hint');
 const environment=document.createElement('div');environment.id='stage-environment';environment.setAttribute('aria-hidden','true');environment.innerHTML='<div class=stage-wall></div><div class=stage-floor></div>';document.querySelector('#experience').prepend(environment);
 const glass=document.createElement('div');glass.id='slot-glass';glass.setAttribute('aria-hidden','true');scene.appendChild(glass);
 const restArtwork=document.createElement('div');restArtwork.id='rest-artwork';restArtwork.setAttribute('aria-hidden','true');scene.appendChild(restArtwork);
@@ -73,6 +73,12 @@ function alignEnvironment(){
  environment.style.top=top+'px';environment.style.height=(portrait?r.height:host.height)+'px';
  environment.style.setProperty('--floor-line',(r.top-host.top-top+r.height*1032/1080)+'px');
  environment.style.setProperty('--counter-left',(r.left-host.left+r.width*295/1920)+'px');environment.style.setProperty('--counter-width',(r.width*1340/1920)+'px');
+ const hintLeft=Math.max(20,Math.min(56,host.width*.027));
+ const hintWidth=r.left-host.left+r.width*295/1920-hintLeft-28;
+ slotHint.classList.toggle('hint-compact',!portrait&&hintWidth<125);
+ slotHint.style.setProperty('--hint-left',hintLeft+'px');
+ slotHint.style.setProperty('--hint-width',Math.max(125,Math.min(280,hintWidth))+'px');
+ slotHint.style.setProperty('--hint-top',(r.top-host.top+r.height*222/1080)+'px');
 }
 new ResizeObserver(alignEnvironment).observe(document.querySelector('#experience'));
 window.addEventListener('resize',alignEnvironment);
@@ -88,6 +94,7 @@ function unlockJourney(){
  journeyUnlocked=true;releaseAfter=0;
  document.documentElement.classList.remove('slot-locked');
  document.body.classList.remove('intro-locked');presentation.inert=false;
+ updateHint();
  document.dispatchEvent(new CustomEvent('saoko:introcomplete'));
 }
 function replayJourney(){
@@ -196,8 +203,23 @@ function motor(u){
 }
 function updateState(){
  scene.dataset.option=String(activeIndex+1);scene.dataset.spinning=String(busy);
+ updateHint();
  window.saokoState={ready,busy,activeIndex,targetIndex,phases:slots.map(r=>r.phase),resolution:[canvas.width,canvas.height]};
 }
+function updateHint(){
+ slotHint.disabled=!journeyUnlocked&&(!ready||busy);
+ slotHint.setAttribute('aria-busy',String(busy));
+ slotHint.setAttribute('aria-label',journeyUnlocked?'Explore the five SAOKO designs and vote':'Spin the SAOKO slot to discover the next design');
+}
+let hintStart=null,hintSwiped=false;
+slotHint.addEventListener('pointerdown',e=>{hintSwiped=false;if(journeyUnlocked||e.pointerType==='mouse')return;hintStart=e.clientY;slotHint.setPointerCapture(e.pointerId);});
+slotHint.addEventListener('pointerup',e=>{if(hintStart!==null&&Math.abs(hintStart-e.clientY)>35){hintSwiped=true;advance(Math.sign(hintStart-e.clientY));}hintStart=null;});
+slotHint.addEventListener('pointercancel',()=>{hintStart=null;});
+slotHint.addEventListener('click',()=>{
+ if(hintSwiped){hintSwiped=false;return;}
+ if(journeyUnlocked)presentation.scrollIntoView({behavior:reduced?'instant':'smooth',block:'start'});
+ else advance(1);
+});
 function frame(now){
  raf=0;const dt=Math.max(.001,(now-lastFrame)/1000);lastFrame=now;let complete=true;
  for(const r of slots){
