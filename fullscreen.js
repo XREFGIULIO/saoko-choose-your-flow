@@ -20,7 +20,10 @@ const slots=[
 ].map((r,i)=>{
  const delay=i<4?[140,60,180,100][i]:((i-4)%3)*65;
  const settle=i<4?[4000,3420,3760,3600][i]:3100+(i-4)*130;
- return {...r,phase:0,velocity:0,texture:null,delay,duration:settle-delay};
+ // The first and fifth designs share black; the sign reel needs one frame per colour.
+ const designs=r.name==='sign'?[...new Set(logoColors)].map(color=>logoColors.indexOf(color)+1):[1,2,3,4,5];
+ const designFrames=logoColors.map((color,index)=>r.name==='sign'?designs.findIndex(k=>logoColors[k-1]===color):index);
+ return {...r,designs,designFrames,phase:0,velocity:0,texture:null,delay,duration:settle-delay};
 });
 // Curved glazing is a fixed, sharp optical layer, independent of moving artwork.
 function mountGlazing(){
@@ -73,15 +76,15 @@ window.addEventListener('hashchange',followSectionLink);
 const gl=canvas.getContext('webgl',{alpha:true,antialias:false,premultipliedAlpha:false,preserveDrawingBuffer:true,powerPreference:'high-performance'});
 const shaderVS=`attribute vec2 aPosition;varying vec2 uv;void main(){uv=aPosition*.5+.5;gl_Position=vec4(aPosition,0.,1.);}`;
 const shaderFS=`precision highp float;
-varying vec2 uv;uniform sampler2D atlas;uniform float phase;uniform float speed;uniform vec2 resolution;
+varying vec2 uv;uniform sampler2D atlas;uniform float phase;uniform float speed;uniform float frameCount;uniform vec2 resolution;
 vec4 paper(float y){return texture2D(atlas,vec2(uv.x,fract(y)));}
 void main(){
  float arc=.96;
  float a=asin(clamp((uv.y*2.-1.)*sin(arc),-.999,.999));
  float bend=smoothstep(.04,.8,abs(speed));
  float strip=phase+.5-mix(uv.y-.5,a/(2.*arc),bend);
- float local=fract(strip),row=mod(mod(floor(strip),5.)+5.,5.);
- float t=(row+local)/5.;
+ float local=fract(strip),row=mod(mod(floor(strip),frameCount)+frameCount,frameCount);
+ float t=(row+local)/frameCount;
  float blur=min(abs(speed)*.00016,.0019);
  vec4 sampleInk=paper(t)*.4+(paper(t+blur)+paper(t-blur))*.24+(paper(t+blur*2.)+paper(t-blur*2.))*.06;
  vec3 ink=sampleInk.rgb;
@@ -117,19 +120,20 @@ function initGL(){
  if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));
  gl.useProgram(program);const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
  const a=gl.getAttribLocation(program,'aPosition');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,2,gl.FLOAT,false,0,0);
- uniforms={};for(const n of ['atlas','phase','speed','resolution'])uniforms[n]=gl.getUniformLocation(program,n);
+ uniforms={};for(const n of ['atlas','phase','speed','frameCount','resolution'])uniforms[n]=gl.getUniformLocation(program,n);
  gl.uniform1i(uniforms.atlas,0);gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.clearColor(0,0,0,0);
  canvas.width=3840;canvas.height=2160;scene.dataset.renderSize='3840 × 2160';
 }
 const cache=new Map();
 function image(url){if(!cache.has(url))cache.set(url,new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('Image unavailable: '+url));im.src=window.SAOKO_ASSETS?.[url]||url;}));return cache.get(url);}
 async function buildAtlas(slot){
- const max=gl.getParameter(gl.MAX_TEXTURE_SIZE);const scale=Math.min(1,max/(slot.ah*5),max/slot.aw);
+ const count=slot.designs.length;
+ const max=gl.getParameter(gl.MAX_TEXTURE_SIZE);const scale=Math.min(1,max/(slot.ah*count),max/slot.aw);
  const w=Math.floor(slot.aw*scale),h=Math.floor(slot.ah*scale);
- const c=document.createElement('canvas');c.width=w;c.height=h*5;
+ const c=document.createElement('canvas');c.width=w;c.height=h*count;
  const ctx=c.getContext('2d',{alpha:true});ctx.imageSmoothingQuality='high';
- for(let k=1;k<=5;k++){
-  ctx.save();ctx.translate(0,(k-1)*h);
+ for(const [index,k] of slot.designs.entries()){
+  ctx.save();ctx.translate(0,index*h);
   const im=await image(window.SAOKO_ART.slot(k,slot));
   const sw=im.width,sh=im.height,sx=0,sy=0;
   // Fit uniformly in screen space, then convert to atlas coordinates.
@@ -151,7 +155,7 @@ function draw(){
  gl.disable(gl.SCISSOR_TEST);gl.viewport(0,0,canvas.width,canvas.height);gl.clear(gl.COLOR_BUFFER_BIT);gl.enable(gl.SCISSOR_TEST);gl.useProgram(program);
  for(const r of slots){
   const x=Math.round(r.x/W*canvas.width),y=Math.round((H-r.y-r.h)/H*canvas.height),w=Math.round(r.w/W*canvas.width),h=Math.round(r.h/H*canvas.height);
-  gl.viewport(x,y,w,h);gl.scissor(x,y,w,h);gl.bindTexture(gl.TEXTURE_2D,r.texture);gl.uniform1f(uniforms.phase,r.phase);gl.uniform1f(uniforms.speed,r.velocity);gl.uniform2f(uniforms.resolution,w,h);gl.drawArrays(gl.TRIANGLES,0,6);
+  gl.viewport(x,y,w,h);gl.scissor(x,y,w,h);gl.bindTexture(gl.TEXTURE_2D,r.texture);gl.uniform1f(uniforms.phase,r.phase);gl.uniform1f(uniforms.speed,r.velocity);gl.uniform1f(uniforms.frameCount,r.designs.length);gl.uniform2f(uniforms.resolution,w,h);gl.drawArrays(gl.TRIANGLES,0,6);
  }
 }
 // Integral of a motor curve: accelerate, cruise, then a long quadratic brake.
@@ -180,7 +184,12 @@ function advance(direction){
  if(!ready||busy)return false;
  const next=Math.max(0,Math.min(4,activeIndex+direction));if(next===activeIndex)return false;
  targetIndex=next;busy=true;restArtwork.hidden=true;wheelSum=0;animationStart=performance.now();lastFrame=animationStart;
- slots.forEach((r,i)=>{r.from=r.phase;r.to=r.phase+direction*(reduced?1:6+(i%3===0?5:0));});
+ slots.forEach((r,i)=>{
+  const count=r.designs.length,current=((r.phase%count)+count)%count;
+  const steps=((direction*(r.designFrames[next]-current))%count+count)%count;
+  const turns=reduced?0:(i%3===0?2:1);
+  r.from=r.phase;r.to=r.phase+direction*(steps+turns*count);
+ });
  $('#status').textContent='The reels are spinning…';updateState();raf=requestAnimationFrame(frame);return true;
 }
 window.addEventListener('wheel',e=>{
