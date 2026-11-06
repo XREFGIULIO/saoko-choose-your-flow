@@ -13,7 +13,7 @@
   {sign:[519,170,405,86],door:[134,615,284,317],front:[433,615,885,317],menu:[477,304,177,293],xs:[701,802,904,1006,1107,1208],cy:310,cw:93,ch:116}
  ];
  const assets={},cache=new Map();
- const assetNames=['stand-wide.webp','food-original-6.jpg',...Array.from({length:5},(_,i)=>`render-${i+1}.webp`),...Array.from({length:5},(_,i)=>`food-original-${i+1}.webp`),...Array.from({length:5},(_,i)=>`menu-master-${i+1}.png`)];
+ const assetNames=['material-environment-4k.png','stand-wide.webp','food-original-6.jpg',...Array.from({length:5},(_,i)=>`render-${i+1}.webp`),...Array.from({length:5},(_,i)=>`food-original-${i+1}.webp`),...Array.from({length:5},(_,i)=>`menu-master-${i+1}.png`)];
  async function dataAsset(n){
   const url=`${n}`;if(window.SAOKO_ASSETS?.[url])return assets[n]=window.SAOKO_ASSETS[url];
   const r=await fetch(url);if(!r.ok)throw Error(`Artwork unavailable: ${n}`);
@@ -121,7 +121,10 @@
   const bg=slot.name==='door'?[C.cream,C.blue,C.green,C.cream,C.yellow][k-1]:[C.yellow,C.pink,C.cream,C.red,C.blue][k-1];
   return rect(0,0,w,h,bg)+fit(slot.name==='door'?door(k):front(k),w,h,slot.name==='door'?808:2378,1053);
  }
- API.wallpaper=()=>url('continuous-wall',()=>`<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 1920 1080"><defs><radialGradient id="tone" cx="50%" cy="22%" r="80%"><stop stop-color="#8b7966"/><stop offset=".65" stop-color="#746455"/><stop offset="1" stop-color="#635448"/></radialGradient><filter id="plaster"><feTurbulence type="fractalNoise" baseFrequency=".065 .078" numOctaves="5" seed="17" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".055"/></feComponentTransfer><feBlend in="SourceGraphic" mode="soft-light"/></filter><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="8" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter></defs><rect width="1920" height="1080" fill="url(#tone)" filter="url(#plaster)"/><rect width="1920" height="1080" filter="url(#grain)" opacity=".045"/></svg>`);
+ API.material=kind=>url(`material-${kind}`,()=>{
+  const wall=kind==='wall',y=wall?0:1794,h=wall?1785:366;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="${h}" viewBox="0 ${y} 3840 ${h}">${image('material-environment-4k.png',0,0,3840,2160,'none')}</svg>`;
+ });
  API.architecture=()=>url('architecture-measured',()=>{
   let s='';
   const crop=(box,x,y,w,h)=>`<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${box.join(' ')}" preserveAspectRatio="none">${image('stand-wide.webp',0,0,1672,941)}</svg>`;
@@ -129,9 +132,9 @@
   // Light and a contact shadow belong to the wall, not a rectangular image crop.
   s+=`<defs><radialGradient id="sign-spill"><stop stop-color="#ffe1a0" stop-opacity=".24"/><stop offset="1" stop-color="#ffe1a0" stop-opacity="0"/></radialGradient><filter id="sign-shadow" x="-30%" y="-80%" width="160%" height="270%"><feGaussianBlur stdDeviation="9"/></filter><filter id="sign-contact" x="-15%" y="-50%" width="130%" height="210%"><feGaussianBlur stdDeviation="2.5"/></filter></defs><ellipse cx="965" cy="92" rx="340" ry="115" fill="url(#sign-spill)"/><rect x="731" y="82" width="472" height="112" rx="1" fill="#21180e" opacity=".65" filter="url(#sign-shadow)"/><rect x="729" y="76" width="472" height="112" fill="#1a120b" opacity=".7" filter="url(#sign-contact)"/>`;
 
-  s+=crop([0,900,149,41],0,1032,295,48);
-  s+=crop([149,900,1378,41],295,1032,1340,48);
-  s+=crop([1527,900,145,41],1635,1032,285,48);
+
+
+
   s+=crop([149,174,400,339],295,222,371,334);
   s+=crop([549,174,213,339],666,222,200,334);
   s+=crop([762,174,765,339],866,222,769,334);

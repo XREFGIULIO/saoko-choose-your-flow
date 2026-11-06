@@ -1,5 +1,7 @@
 const $=s=>document.querySelector(s);
 const scene=$('#scene'),canvas=$('#reels'),loading=$('#loading');
+const environment=document.createElement('div');environment.id='stage-environment';environment.setAttribute('aria-hidden','true');environment.innerHTML='<div class=stage-wall></div><div class=stage-floor></div>';document.querySelector('#experience').prepend(environment);
+const glass=document.createElement('div');glass.id='slot-glass';glass.setAttribute('aria-hidden','true');scene.appendChild(glass);
 const restArtwork=document.createElement('div');restArtwork.id='rest-artwork';restArtwork.setAttribute('aria-hidden','true');scene.appendChild(restArtwork);
 function showRest(k){restArtwork.innerHTML=window.SAOKO_ART.rest(k,slots);restArtwork.hidden=false;}
 
@@ -16,6 +18,29 @@ const slots=[
  {name:'menu',x:666,y:222,w:200,h:334,aw:800,ah:1336},
  ...[890,1006,1122,1238,1354,1470].map((x,i)=>({name:'card',card:i+1,x,y:250,w:100,h:132,aw:750,ah:990}))
 ].map((r,i)=>({...r,phase:0,velocity:0,texture:null,delay:i<4?[140,60,180,100][i]:((i-4)%3)*65,duration:i<4?[6100,5350,5850,5550][i]:4400+(i-4)*235}));
+// Curved glazing is a fixed, sharp optical layer, independent of moving artwork.
+function mountGlazing(){
+ glass.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 1920 1080"><defs>
+ <linearGradient id="glass-depth" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#211b13" stop-opacity=".29"/><stop offset=".075" stop-color="#fff" stop-opacity=".06"/><stop offset=".25" stop-color="#fff" stop-opacity="0"/><stop offset=".72" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#261e13" stop-opacity=".27"/></linearGradient>
+ <linearGradient id="glass-side"><stop stop-color="#292317" stop-opacity=".22"/><stop offset=".035" stop-color="#fff1d2" stop-opacity=".4"/><stop offset=".085" stop-color="#fff" stop-opacity=".03"/><stop offset=".86" stop-color="#fff" stop-opacity="0"/><stop offset=".97" stop-color="#ffebc6" stop-opacity=".24"/><stop offset="1" stop-color="#241d13" stop-opacity=".3"/></linearGradient>
+ <linearGradient id="glass-glint" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".38"/><stop offset=".5" stop-color="#fff4de" stop-opacity=".1"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <linearGradient id="bezel" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#272925"/><stop offset=".13" stop-color="#e5e7db"/><stop offset=".32" stop-color="#77776c"/><stop offset=".7" stop-color="#343a39"/><stop offset=".86" stop-color="#e2e4dc"/><stop offset="1" stop-color="#53584f"/></linearGradient>
+ </defs>${slots.map((r,i)=>{
+ const w=r.w,h=r.h,rx=r.name==='card'?2.3:1.6;
+ return `<g transform="translate(${r.x} ${r.y})"><defs><clipPath id="pane-${i}"><rect x="1" y="1" width="${w-2}" height="${h-2}" rx="${rx}"/></clipPath></defs><g clip-path="url(#pane-${i})"><rect width="${w}" height="${h}" fill="url(#glass-depth)"/><rect width="${w}" height="${h}" fill="url(#glass-side)"/><path d="M0 ${h*.085}Q${w*.5} ${-h*.025} ${w} ${h*.085}L${w} ${h*.19}Q${w*.5} ${h*.035} 0 ${h*.19}Z" fill="url(#glass-glint)"/><path d="M${w*.16} 0Q${w*.065} ${h*.5} ${w*.15} ${h}L${w*.19} ${h}Q${w*.11} ${h*.5} ${w*.21} 0Z" fill="#fff3da" opacity=".105"/><path d="M${w*.87} 0Q${w*.93} ${h*.5} ${w*.87} ${h}" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width="${Math.max(.65,w*.002)}"/></g><rect x=".8" y=".8" width="${w-1.6}" height="${h-1.6}" rx="${rx}" fill="none" stroke="#172023" stroke-opacity=".6" stroke-width="2.8"/><rect x="1.2" y="1.2" width="${w-2.4}" height="${h-2.4}" rx="${rx}" fill="none" stroke="url(#bezel)" stroke-width="1.7"/><path d="M3 ${h*.045}Q${w*.5} 1.5 ${w-3} ${h*.045}" fill="none" stroke="#fff2d5" stroke-opacity=".55" stroke-width=".8"/><path d="M3 ${h-3}Q${w*.5} ${h-1} ${w-3} ${h-3}" fill="none" stroke="#e8d5af" stroke-opacity=".35" stroke-width=".7"/></g>`;
+ }).join('')}</svg>`;
+}
+function alignEnvironment(){
+ const host=document.querySelector('#experience').getBoundingClientRect(),r=scene.getBoundingClientRect();
+ const portrait=matchMedia('(max-width:760px) and (orientation:portrait)').matches;
+ const top=portrait?r.top-host.top:0;
+ environment.style.top=top+'px';environment.style.height=(portrait?r.height:host.height)+'px';
+ environment.style.setProperty('--floor-line',(r.top-host.top-top+r.height*1032/1080)+'px');
+ environment.style.setProperty('--counter-left',(r.left-host.left+r.width*295/1920)+'px');environment.style.setProperty('--counter-width',(r.width*1340/1920)+'px');
+}
+new ResizeObserver(alignEnvironment).observe(document.querySelector('#experience'));
+window.addEventListener('resize',alignEnvironment);
+mountGlazing();alignEnvironment();
 let ready=false,busy=false,activeIndex=0,targetIndex=0,animationStart=0,lastFrame=0,raf=0;
 let wheelSum=0,lastWheel=-Infinity,touchStart=null;
 const presentation=document.querySelector('#presentation');
@@ -66,7 +91,7 @@ void main(){
  reflection+=exp(-pow((x-.83)/.09,2.))*.035;
  reflection+=exp(-pow((uv.y-.95)/.014,2.))*.13;
  reflection+=exp(-pow((uv.y-.09)/.022,2.))*.025;
- ink=mix(ink,vec3(.97,.99,1.),reflection*bend);
+ ink=mix(ink,vec3(1.,.94,.80),reflection*bend);
  vec2 d=min(uv,1.-uv)*resolution;
  float edge=min(d.x,d.y);
  // A narrow machined rim: dark gasket, brushed body and crisp reflected neon.
@@ -177,6 +202,6 @@ document.querySelector('#experience').addEventListener('pointerup',e=>{if(!journ
 document.querySelector('#experience').addEventListener('pointercancel',()=>{touchStart=null;});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();cancelAnimationFrame(raf);busy=false;showError();});
 try{
- await window.SAOKO_ART.ready;document.documentElement.style.setProperty('--saoko-wall',`url("${window.SAOKO_ART.wallpaper()}")`);document.querySelector('.architecture').src=window.SAOKO_ART.architecture();initGL();await Promise.all(slots.map(buildAtlas));await image('stand-wide.webp');ready=true;draw();showRest(1);updateState();loading.classList.add('ready');$('#status').textContent='Design 1 : Cream & yellow';
+ await window.SAOKO_ART.ready;document.documentElement.style.setProperty('--saoko-wall',`url("${window.SAOKO_ART.material('wall')}")`);document.documentElement.style.setProperty('--saoko-floor',`url("${window.SAOKO_ART.material('floor')}")`);alignEnvironment();document.querySelector('.architecture').src=window.SAOKO_ART.architecture();initGL();await Promise.all(slots.map(buildAtlas));await image('stand-wide.webp');ready=true;draw();showRest(1);updateState();loading.classList.add('ready');$('#status').textContent='Design 1 : Cream & yellow';
  if(!followSectionLink())window.scrollTo({top:0,behavior:'instant'});
 }catch(e){console.error(e);showError();}
