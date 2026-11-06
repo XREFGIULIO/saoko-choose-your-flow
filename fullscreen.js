@@ -177,6 +177,6 @@ document.querySelector('#experience').addEventListener('pointerup',e=>{if(!journ
 document.querySelector('#experience').addEventListener('pointercancel',()=>{touchStart=null;});
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();cancelAnimationFrame(raf);busy=false;showError();});
 try{
- await window.SAOKO_ART.ready;document.querySelector('.architecture').src=window.SAOKO_ART.architecture();initGL();await Promise.all(slots.map(buildAtlas));await image('stand-wide.webp');ready=true;draw();showRest(1);updateState();loading.classList.add('ready');$('#status').textContent='Design 1 : Cream & yellow';
+ await window.SAOKO_ART.ready;document.documentElement.style.setProperty('--saoko-wall',`url("${window.SAOKO_ART.wallpaper()}")`);document.querySelector('.architecture').src=window.SAOKO_ART.architecture();initGL();await Promise.all(slots.map(buildAtlas));await image('stand-wide.webp');ready=true;draw();showRest(1);updateState();loading.classList.add('ready');$('#status').textContent='Design 1 : Cream & yellow';
  if(!followSectionLink())window.scrollTo({top:0,behavior:'instant'});
 }catch(e){console.error(e);showError();}

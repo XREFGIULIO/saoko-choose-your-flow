@@ -22,14 +22,12 @@ if(!reducedMotion&&'IntersectionObserver'in window){
  document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
 }
 const scrollToVote=()=>q('#ton-vote').scrollIntoView({behavior:reducedMotion?'instant':'smooth',block:'start'});
-let selected=null,confirmed=null,pendingChoice=null,saving=false;
+let selected=null,confirmed=null,pendingChoice=null,saving=false,checking=true;
 const votes=window.SAOKO_VOTES,STORAGE_KEY=votes.KEY;
-const newBallotId=()=>crypto.randomUUID?.()||(Date.now()+'-'+Math.random().toString(36).slice(2));
-let ballotId=newBallotId();
 const dialog=q('#confirm-dialog');
 function updateSelection(){
  selected=Number(q('input[name="design"]:checked')?.value)||null;
- q('#review-vote').disabled=!selected||!!confirmed;
+ q('#review-vote').disabled=!selected||!!confirmed||checking;
  q('#selection-label').textContent=confirmed?`Your choice is saved: ${shortNumber(confirmed.design)} · ${designs[confirmed.design-1].name}.`:selected?`Your favourite: ${shortNumber(selected)} · ${designs[selected-1].name}.`:'Trust your gut. Pick a flow.';
 }
 q('#vote-form').addEventListener('change',updateSelection);
@@ -37,13 +35,14 @@ document.querySelectorAll('[data-choose]').forEach(button=>button.addEventListen
  if(!confirmed){q(`input[name="design"][value="${button.dataset.choose}"]`).checked=true;updateSelection();}
  scrollToVote();
 }));
-function revealResults(receipt,focus=false,ledger=votes.read(localStorage)){
+function revealResults(data,focus=false){
+ const receipt=data.receipt;
  confirmed=receipt;selected=receipt.design;q(`input[name="design"][value="${selected}"]`).checked=true;
  q('#vote-fieldset').disabled=true;q('#review-vote').disabled=true;q('#review-vote').textContent='Vote saved ✓';updateSelection();
  q('#receipt-text').textContent=`You chose ${shortNumber(selected)} · ${designs[selected-1].name}. Got it.`;
- const counts=votes.counts(ledger),total=ledger.ballots.length;
- q('#results-bars').innerHTML=designs.map((d,i)=>{const percent=Math.round(counts[i]/total*100);return `<div class="result-row"><div class="result-name">${shortNumber(d.id)} · ${d.name}${d.id===selected?'<small>Your flow ✓</small>':''}</div><div class="result-track"><div class="result-fill" style="--percent:${percent}%;--bar:${d.colors[d.id===1?1:0]}"></div></div><div class="result-value">${percent}%<small>${counts[i]} vote${counts[i]===1?'':'s'}</small></div></div>`;}).join('');
- q('#results-total').textContent=total+' vote'+(total===1?'':'s')+' saved on this device · Team beta results, with no simulated votes.';
+ const {counts,total}=data;
+ q('#results-bars').innerHTML=designs.map((d,i)=>{const percent=Math.round(counts[i]/Math.max(total,1)*100);return `<div class="result-row"><div class="result-name">${shortNumber(d.id)} · ${d.name}${d.id===selected?'<small>Your flow ✓</small>':''}</div><div class="result-track"><div class="result-fill" style="--percent:${percent}%;--bar:${d.colors[d.id===1?1:0]}"></div></div><div class="result-value">${percent}%<small>${counts[i]} vote${counts[i]===1?'':'s'}</small></div></div>`;}).join('');
+ q('#results-total').textContent=total+' vote'+(total===1?'':'s')+' from the SAOKO community · Updated '+new Date(data.updatedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'.';
  q('#vote-results').hidden=false;
  if(focus){q('#vote-results').focus({preventScroll:true});q('#vote-results').scrollIntoView({behavior:reducedMotion?'instant':'smooth',block:'start'});}
 }
@@ -57,26 +56,25 @@ q('#vote-form').addEventListener('submit',e=>{
 q('#confirm-vote').addEventListener('click',async()=>{
  if(saving||!pendingChoice)return;saving=true;q('#confirm-vote').disabled=true;q('#edit-vote').disabled=true;
  try{
-  const record=()=>{
-   const receipt={id:ballotId,design:pendingChoice,confirmedAt:new Date().toISOString()};
-   const ledger=votes.append(localStorage,receipt);
-   return {receipt:ledger.ballots.find(b=>b.id===ballotId),ledger};
-  };
-  const saved=navigator.locks?await navigator.locks.request(STORAGE_KEY,record):record();
-  dialog.close();revealResults(saved.receipt,true,saved.ledger);
- }catch(e){q('#confirm-error').hidden=false;q('#confirm-error').textContent='Your browser could not save the vote on this device. Allow local storage or open the file in a regular browser window, then try again.';}
+  const saved=await votes.vote(pendingChoice);
+  dialog.close();revealResults(saved,true);q('#vote-error').hidden=true;
+ }catch(e){q('#confirm-error').hidden=false;q('#confirm-error').textContent=e.message||'We could not save your vote. Please try again.';}
+
  finally{saving=false;q('#confirm-vote').disabled=false;q('#edit-vote').disabled=false;}
 });
-// A reload retains the totals while starting a fresh voter.
-q('#next-voter').addEventListener('click',()=>{
- confirmed=null;selected=null;pendingChoice=null;ballotId=newBallotId();
- q('#vote-form').reset();q('#vote-fieldset').disabled=false;
- q('#vote-results').hidden=true;q('#results-bars').innerHTML='';
- q('#review-vote').innerHTML='That’s my flow <span aria-hidden="true">↗</span>';
- updateSelection();q('#vote-form').scrollIntoView({behavior:reducedMotion?'instant':'smooth',block:'start'});
- q('input[name="design"]').focus({preventScroll:true});
-});
-window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY&&confirmed){try{revealResults(confirmed,false,votes.read(localStorage));}catch(err){}}});
+// A returning visitor keeps the same confirmed choice; only server totals are shown.
+async function refreshResults(){
+ try{
+  const data=await votes.status();
+  if(data.receipt)revealResults(data);
+  q('#vote-error').hidden=true;
+ }catch(error){q('#vote-error').textContent=error.message;q('#vote-error').hidden=false;}
+ finally{checking=false;updateSelection();}
+}
+await refreshResults();
+setInterval(()=>{if(confirmed&&!document.hidden)refreshResults();},30000);
+window.addEventListener('focus',()=>{if(confirmed)refreshResults();});
+window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY)refreshResults();});
 q('#share-invitation').addEventListener('click',async()=>{
  const publicURL=location.protocol==='https:'&&!['localhost','127.0.0.1'].includes(location.hostname)?`\n${location.origin+location.pathname}`:'';
  const text=`Your turn. Your flow. Help choose SAOKO’s next look in Geneva! Five designs, one vote. The design with the most votes in the public poll is the one we’ll bring to life. Find your favourite and pass the flow on.${publicURL}`;

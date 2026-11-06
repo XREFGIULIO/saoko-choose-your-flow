@@ -121,11 +121,14 @@
   const bg=slot.name==='door'?[C.cream,C.blue,C.green,C.cream,C.yellow][k-1]:[C.yellow,C.pink,C.cream,C.red,C.blue][k-1];
   return rect(0,0,w,h,bg)+fit(slot.name==='door'?door(k):front(k),w,h,slot.name==='door'?808:2378,1053);
  }
+ API.wallpaper=()=>url('continuous-wall',()=>`<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 1920 1080"><defs><radialGradient id="tone" cx="50%" cy="22%" r="80%"><stop stop-color="#8b7966"/><stop offset=".65" stop-color="#746455"/><stop offset="1" stop-color="#635448"/></radialGradient><filter id="plaster"><feTurbulence type="fractalNoise" baseFrequency=".065 .078" numOctaves="5" seed="17" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".055"/></feComponentTransfer><feBlend in="SourceGraphic" mode="soft-light"/></filter><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="8" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter></defs><rect width="1920" height="1080" fill="url(#tone)" filter="url(#plaster)"/><rect width="1920" height="1080" filter="url(#grain)" opacity=".045"/></svg>`);
  API.architecture=()=>url('architecture-measured',()=>{
-  let s=rect(0,0,1920,1080,'#8e7c68');
+  let s='';
   const crop=(box,x,y,w,h)=>`<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${box.join(' ')}" preserveAspectRatio="none">${image('stand-wide.webp',0,0,1672,941)}</svg>`;
   // Reframe the blank architectural surfaces; preserve print/food geometry separately.
-  s+=`<defs><linearGradient id="wall-tone"><stop stop-color="#726457"/><stop offset=".5" stop-color="#94816c"/><stop offset="1" stop-color="#726457"/></linearGradient><filter id="wall-grain"><feTurbulence type="fractalNoise" baseFrequency=".55" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter></defs>`+rect(0,0,1920,1032,'url(#wall-tone)')+`<rect width="1920" height="1032" filter="url(#wall-grain)" opacity=".055"/>`;
+  // Light and a contact shadow belong to the wall, not a rectangular image crop.
+  s+=`<defs><radialGradient id="sign-spill"><stop stop-color="#ffe1a0" stop-opacity=".24"/><stop offset="1" stop-color="#ffe1a0" stop-opacity="0"/></radialGradient><filter id="sign-shadow" x="-30%" y="-80%" width="160%" height="270%"><feGaussianBlur stdDeviation="9"/></filter><filter id="sign-contact" x="-15%" y="-50%" width="130%" height="210%"><feGaussianBlur stdDeviation="2.5"/></filter></defs><ellipse cx="965" cy="92" rx="340" ry="115" fill="url(#sign-spill)"/><rect x="731" y="82" width="472" height="112" rx="1" fill="#21180e" opacity=".65" filter="url(#sign-shadow)"/><rect x="729" y="76" width="472" height="112" fill="#1a120b" opacity=".7" filter="url(#sign-contact)"/>`;
+
   s+=crop([0,900,149,41],0,1032,295,48);
   s+=crop([149,900,1378,41],295,1032,1340,48);
   s+=crop([1527,900,145,41],1635,1032,285,48);
@@ -139,7 +142,7 @@
   s+=crop([532,513,990,340],656,556,964,434);
   s+=crop([1522,513,5,340],1620,556,15,434);
   s+=crop([149,853,1378,47],295,990,1340,42);
-  s+=crop([648,0,386,32],817,34,296,25);
+
   return svg(s,3840,2160,'0 0 1920 1080');
  });
  API.slot=(k,slot)=>url(`measured-${k}-${slot.name}-${slot.card||0}`,()=>svg(slotBody(k,slot),slot.w*4,slot.h*4,`0 0 ${slot.w} ${slot.h}`));

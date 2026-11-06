@@ -25,3 +25,9 @@ html{overflow-x:clip;overflow-y:auto}body:not(.intro-locked){overflow:visible}ht
 @media(max-width:760px){.collab-lockup{gap:10px}.collab-studio img{width:87px}.collab-lockup .nav-logo img{width:73px}.collab-cross{width:20px;height:20px;font-size:19px}.chapter-nav nav{gap:12px}.chapter-nav nav>a:not(.nav-vote){display:none}.next-voter{align-items:start;flex-direction:column;gap:14px}}
 @media(max-width:370px){.chapter-nav{padding-inline:12px}.collab-lockup{gap:7px}.collab-studio img{width:76px}.collab-lockup .nav-logo img{width:65px}.nav-vote{padding:10px}.nav-vote span{margin-left:4px}}
 @media(max-width:760px) and (orientation:portrait){#experience{background:var(--paper)}}
+
+/* One continuous plaster surface across the viewport: no side filler strips. */
+#experience{background:#786958 var(--saoko-wall) center/cover no-repeat}.architecture{background:transparent}
+@media(max-width:760px) and (orientation:portrait){#experience{background:var(--paper)}#scene{background:#786958 var(--saoko-wall) center/cover no-repeat}}
+
+.mobile-lockup .mobile-saoko img{display:block;width:112px;height:auto}
